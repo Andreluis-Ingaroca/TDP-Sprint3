@@ -12,43 +12,37 @@ import (
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
 )
 
-// SmartContract provides functions for managing a car
+// SmartContract provides functions for managing a medicine
 type SmartContract struct {
 	contractapi.Contract
 }
 
-// Car describes basic details of what makes up a car
-type Car struct {
-	Make   string `json:"make"`
-	Model  string `json:"model"`
-	Colour string `json:"colour"`
-	Owner  string `json:"owner"`
+// Car describes basic details of what makes up a medicine
+type Medicine struct {
+	Name   	       string `json:"name"`
+	Concentration  string `json:"concentration"`
+	Form           string `json:"form"`
+	Expiration     string `json:"expiration"`
+	Quantity       string `json:"quantity"`
+	Code           string `json:"code"`
 }
 
 // QueryResult structure used for handling result of query
 type QueryResult struct {
 	Key    string `json:"Key"`
-	Record *Car
+	Record *Medicine
 }
 
-// InitLedger adds a base set of cars to the ledger
+// InitLedger adds a base set of medicines to the ledger
 func (s *SmartContract) InitLedger(ctx contractapi.TransactionContextInterface) error {
-	cars := []Car{
-		Car{Make: "Toyota", Model: "Prius", Colour: "blue", Owner: "Tomoko"},
-		Car{Make: "Ford", Model: "Mustang", Colour: "red", Owner: "Brad"},
-		Car{Make: "Hyundai", Model: "Tucson", Colour: "green", Owner: "Jin Soo"},
-		Car{Make: "Volkswagen", Model: "Passat", Colour: "yellow", Owner: "Max"},
-		Car{Make: "Tesla", Model: "S", Colour: "black", Owner: "Adriana"},
-		Car{Make: "Peugeot", Model: "205", Colour: "purple", Owner: "Michel"},
-		Car{Make: "Chery", Model: "S22L", Colour: "white", Owner: "Aarav"},
-		Car{Make: "Fiat", Model: "Punto", Colour: "violet", Owner: "Pari"},
-		Car{Make: "Tata", Model: "Nano", Colour: "indigo", Owner: "Valeria"},
-		Car{Make: "Holden", Model: "Barina", Colour: "brown", Owner: "Shotaro"},
+	medicines := []Medicine{
+		Medicine{Name: "Amoxicilina", Concentration: "250mg/5ml", Form: "Jarabe", Expiration: "31/12/2023", Quantity: "100", Code: "1234567"},
+		Medicine{Name: "Ibuprofeno", Concentration: "400mg", Form: "Tableta", Expiration: "31/12/2024", Quantity: "100", Code: "1234567"},
 	}
 
-	for i, car := range cars {
-		carAsBytes, _ := json.Marshal(car)
-		err := ctx.GetStub().PutState("CAR"+strconv.Itoa(i), carAsBytes)
+	for i, medicine := range medicines {
+		medicineAsBytes, _ := json.Marshal(medicine)
+		err := ctx.GetStub().PutState("MEDICINE"+strconv.Itoa(i), medicineAsBytes)
 
 		if err != nil {
 			return fmt.Errorf("Failed to put to world state. %s", err.Error())
@@ -58,40 +52,42 @@ func (s *SmartContract) InitLedger(ctx contractapi.TransactionContextInterface) 
 	return nil
 }
 
-// CreateCar adds a new car to the world state with given details
-func (s *SmartContract) CreateCar(ctx contractapi.TransactionContextInterface, carNumber string, make string, model string, colour string, owner string) error {
-	car := Car{
-		Make:   make,
-		Model:  model,
-		Colour: colour,
-		Owner:  owner,
+// CreateMedicine adds a new medicine to the world state with given details
+func (s *SmartContract) CreateMedicine(ctx contractapi.TransactionContextInterface, medicineNumber string, name string, concentration string, form string, expiration string, quantity string, code string) error {
+	medicine := Medicine{
+		Name: name,
+		Concentration: concentration,
+		Form: form,
+		Expiration: expiration,
+		Quantity: quantity,
+		Code: code,
 	}
 
-	carAsBytes, _ := json.Marshal(car)
+	medicineAsBytes, _ := json.Marshal(medicine)
 
-	return ctx.GetStub().PutState(carNumber, carAsBytes)
+	return ctx.GetStub().PutState(medicineNumber, medicineAsBytes)
 }
 
-// QueryCar returns the car stored in the world state with given id
-func (s *SmartContract) QueryCar(ctx contractapi.TransactionContextInterface, carNumber string) (*Car, error) {
-	carAsBytes, err := ctx.GetStub().GetState(carNumber)
+// QueryMedicine returns the medicine stored in the world state with given id
+func (s *SmartContract) QueryMedicine(ctx contractapi.TransactionContextInterface, medicineNumber string) (*Medicine, error) {
+	medicineAsBytes, err := ctx.GetStub().GetState(medicineNumber)
 
 	if err != nil {
 		return nil, fmt.Errorf("Failed to read from world state. %s", err.Error())
 	}
 
-	if carAsBytes == nil {
-		return nil, fmt.Errorf("%s does not exist", carNumber)
+	if medicineAsBytes == nil {
+		return nil, fmt.Errorf("%s does not exist", medicineNumber)
 	}
 
-	car := new(Car)
-	_ = json.Unmarshal(carAsBytes, car)
+	medicine := new(Medicine)
+	_ = json.Unmarshal(medicineAsBytes, medicine)
 
-	return car, nil
+	return medicine, nil
 }
 
-// QueryAllCars returns all cars found in world state
-func (s *SmartContract) QueryAllCars(ctx contractapi.TransactionContextInterface) ([]QueryResult, error) {
+// QueryAllMedicines returns all medicines found in world state
+func (s *SmartContract) QueryAllMedicines(ctx contractapi.TransactionContextInterface) ([]QueryResult, error) {
 	startKey := ""
 	endKey := ""
 
@@ -111,29 +107,28 @@ func (s *SmartContract) QueryAllCars(ctx contractapi.TransactionContextInterface
 			return nil, err
 		}
 
-		car := new(Car)
-		_ = json.Unmarshal(queryResponse.Value, car)
+		medicine := new(Medicine)
+		_ = json.Unmarshal(queryResponse.Value, medicine)
 
-		queryResult := QueryResult{Key: queryResponse.Key, Record: car}
+		queryResult := QueryResult{Key: queryResponse.Key, Record: medicine}
 		results = append(results, queryResult)
 	}
 
 	return results, nil
 }
 
-// ChangeCarOwner updates the owner field of car with given id in world state
-func (s *SmartContract) ChangeCarOwner(ctx contractapi.TransactionContextInterface, carNumber string, newOwner string) error {
-	car, err := s.QueryCar(ctx, carNumber)
+// ChangeCarOwner updates the owner field of medicine with given id in world state
+func (s *SmartContract) ChangeMedicineQuantity(ctx contractapi.TransactionContextInterface, medicineNumber string, newQuantity string) error {
+	medicine, err := s.QueryMedicine(ctx, medicineNumber)
 
 	if err != nil {
 		return err
 	}
 
-	car.Owner = newOwner
+	medicine.Quantity = newQuantity
+	medicineAsBytes, _ := json.Marshal(medicine)
 
-	carAsBytes, _ := json.Marshal(car)
-
-	return ctx.GetStub().PutState(carNumber, carAsBytes)
+	return ctx.GetStub().PutState(medicineNumber, medicineAsBytes)
 }
 
 func main() {
